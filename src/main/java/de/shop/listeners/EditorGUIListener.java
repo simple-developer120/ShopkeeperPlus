@@ -204,7 +204,6 @@ public class EditorGUIListener implements Listener {
                     plugin.getShopEditorListener().openEditorGUI(player, entity);
                 }
             }
-            // ✅ بلاک Type که جا افتاده بود
             else if (slot == SLOT_TYPE) {
                 if (entity instanceof Villager v) {
                     int current = Arrays.asList(CUSTOM_TYPES).indexOf(v.getVillagerType());
@@ -330,7 +329,6 @@ private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageInde
         boolean hasCost1  = cost1  != null && !cost1.getType().isAir();
         boolean hasCost2  = cost2  != null && !cost2.getType().isAir();
 
-        // اگه Result خالی بود، ترید حذف بشه
         if (!hasResult) {
             if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
                 recipes.set(globalIndex, null);
@@ -339,7 +337,6 @@ private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageInde
             continue;
         }
 
-        // اگه هر دو Cost خالی بود، ترید حذف بشه
         if (!hasCost1 && !hasCost2) {
             if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
                 recipes.set(globalIndex, null);
@@ -350,7 +347,6 @@ private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageInde
 
         MerchantRecipe recipe = new MerchantRecipe(result.clone(), Integer.MAX_VALUE);
         
-        // ✅ ذخیره بدون فشرده کردن آیتم‌ها
         if (hasCost1 && hasCost2) {
             recipe.addIngredient(cost1.clone());
             recipe.addIngredient(cost2.clone());
@@ -359,7 +355,7 @@ private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageInde
             recipe.addIngredient(cost1.clone());
         } 
         else {
-            recipe.addIngredient(cost2.clone()); // فقط پایین پر بود، به عنوان آیتم اول ذخیره میشه
+            recipe.addIngredient(cost2.clone());
         }
 
         while (recipes.size() <= globalIndex) recipes.add(null);
@@ -370,7 +366,6 @@ private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageInde
         else updated++;
     }
 
-    // ✅ فشرده‌سازی نهایی: حذف تمام اسلات‌های خالی (null) برای جلوگیری از کرش و پرش آیتم‌ها
     recipes.removeIf(Objects::isNull);
 
     data.setRecipes(recipes);
