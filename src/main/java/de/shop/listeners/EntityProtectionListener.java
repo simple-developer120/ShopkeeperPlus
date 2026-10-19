@@ -18,7 +18,6 @@ public class EntityProtectionListener implements Listener {
         this.plugin = plugin;
     }
 
-    // ✅ ۱. محافظت از آسیب دیدن
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!isShopkeeper(event.getEntity())) return;
@@ -28,7 +27,6 @@ public class EntityProtectionListener implements Listener {
         }
     }
 
-    // ✅ ۲. محافظت از مرگ
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDeath(EntityDeathEvent event) {
         if (!isShopkeeper(event.getEntity())) return;
@@ -36,12 +34,9 @@ public class EntityProtectionListener implements Listener {
         event.setDroppedExp(0);
     }
 
-    // ✅ ۳. دور زدن WorldGuard موقع اسپاون شدن
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-        // اگه دلیل اسپاون CUSTOM باشه، یعنی خود پلاگین ما داره اسپاونش میکنه
         if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM) {
-            // به WorldGuard میگیم این یکی رو کنسل نکنه
             event.setCancelled(false);
         }
     }
