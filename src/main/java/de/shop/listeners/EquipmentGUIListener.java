@@ -19,7 +19,6 @@ import java.util.UUID;
 public class EquipmentGUIListener implements Listener {
 
     private final VillagerShop plugin;
-    // ✅ نگهداری موجودیت در حال ادیت برای هر بازیکن
     private final Map<UUID, UUID> editingEntity = new java.util.HashMap<>();
 
     public EquipmentGUIListener(VillagerShop plugin) {
@@ -39,19 +38,15 @@ public class EquipmentGUIListener implements Listener {
         Inventory clicked = event.getClickedInventory();
         int slot = event.getRawSlot();
 
-        // اگه توی اینونتوری خودش کلیک کرد
         if (clicked != null && !clicked.equals(top)) {
-            // اجازه بده آیتم برداره یا بذاره، ولی shift+click رو کنسل کن
             if (event.isShiftClick()) event.setCancelled(true);
             return;
         }
 
-        // اگه روی اسلات‌های 0 تا 5 (تجهیزات) کلیک کرد، اجازه بده
         if (slot >= 0 && slot <= 5) {
             return; 
         }
 
-        // بستن
         event.setCancelled(true);
         if (slot == EquipmentGUI.SLOT_CLOSE) {
             player.closeInventory();
@@ -71,7 +66,6 @@ public class EquipmentGUIListener implements Listener {
 
         Inventory inv = event.getView().getTopInventory();
 
-        // ✅ ذخیره در موجودیت
         if (entity instanceof org.bukkit.entity.LivingEntity living) {
             org.bukkit.inventory.EntityEquipment eq = living.getEquipment();
             if (eq != null) {
@@ -84,7 +78,6 @@ public class EquipmentGUIListener implements Listener {
             }
         }
 
-        // ✅ ذخیره در ShopData (YAML)
         ShopData data = plugin.getShopDataManager().getByEntity(uuid);
         if (data != null) {
             data.getEquipment().clear();
