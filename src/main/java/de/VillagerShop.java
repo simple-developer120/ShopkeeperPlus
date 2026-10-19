@@ -120,4 +120,4 @@ public class VillagerShop extends JavaPlugin {
     public TeleportListener getTeleportListener() { return teleportListener; }
     public ShopEditorListener getShopEditorListener() { return shopEditorListener; }
     public EditorGUIListener getEditorGUIListener() { return editorGUIListener; }
-          }
+}
