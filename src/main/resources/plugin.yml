@@ -1,0 +1,20 @@
+name: ShopKeeperPlus
+version: '${version}'
+main: de.shop.VillagerShop
+api-version: '1.20'
+author: god_craft
+description: Custom Shopkeeper Plugin with DataComponent validation
+commands:
+  shopkeep:
+    description: Creates a custom shopkeeper
+    usage: /shopkeep [type <entity>|delete <name>]
+    permission: shopkeeperplus.admin
+    permission-message: You don't have permission!
+    aliases: [sok, shopk]
+permissions:
+  shopkeeperplus.admin:
+    description: Access to /shopkeep command
+    default: op
+  shopkeeperplus.editor:
+    description: Access to edit shopkeepers (Shift+Right-click)
+    default: op
