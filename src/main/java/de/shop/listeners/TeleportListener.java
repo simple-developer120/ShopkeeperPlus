@@ -51,7 +51,6 @@ public class TeleportListener implements Listener {
             event.setCancelled(true);
 
             UUID shopkeeperUuid = awaitingTeleport.get(player.getUniqueId());
-            // ✅ جستجوی مطمئن‌تر
             Entity found = Bukkit.getEntity(shopkeeperUuid);
             if (found == null || found.isDead()) {
                 player.sendMessage("§cShopkeeper not found!");
