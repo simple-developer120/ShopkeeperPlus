@@ -56,6 +56,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 | `/shopkeep tp <name>` | Teleports you to the shopkeeper's location. |
 | `/shopkeep rename <name> <newName>` | Renames the shopkeeper and updates its YAML filename. Supports color codes (`&`). |
 | `/shopkeep changetype <name> <type>` | Changes the entity type of an existing shopkeeper and respawns it. |
+| `/shopkeep reload` | respawn all shopkeepers |
 
 ---
 
