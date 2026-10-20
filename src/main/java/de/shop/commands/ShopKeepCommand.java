@@ -33,6 +33,15 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!player.hasPermission("shopkeeperplus.admin")) {
+                player.sendMessage("§cYou don't have permission to use this command!");
+                return true;
+            }
+            reloadShopkeepers(player);
+            return true;
+        }
+
         if (args.length == 2 && args[0].equalsIgnoreCase("type")) {
             EntityType type;
             try { type = EntityType.valueOf(args[1].toUpperCase()); } 
@@ -83,7 +92,35 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/shopkeep tp <name> §7- Teleport to a shopkeeper");
         player.sendMessage("§e/shopkeep rename <name> <newName> §7- Rename a shopkeeper");
         player.sendMessage("§e/shopkeep changetype <name> <type> §7- Change entity type of a shopkeeper");
+        player.sendMessage("§e/shopkeep reload §7- Reload and respawn all shopkeepers");
         return true;
+    }
+
+    private void reloadShopkeepers(Player player) {
+        player.sendMessage("§eReloading all shopkeepers...");
+
+        // 1. Remove all existing shopkeeper entities
+        int removed = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity e : world.getEntities()) {
+                if (ShopEditorListener.isShopkeeper(e)) {
+                    e.remove();
+                    removed++;
+                }
+            }
+        }
+
+        // 2. Reload data from disk
+        plugin.getShopDataManager().loadAll();
+
+        // 3. Respawn all shopkeepers
+        int spawned = 0;
+        for (ShopData data : plugin.getShopDataManager().getAll()) {
+            plugin.getShopDataManager().spawnEntity(data);
+            spawned++;
+        }
+
+        player.sendMessage("§aReload complete! Removed §c" + removed + " §aand respawned §a" + spawned + " §ashopkeepers.");
     }
 
     private void tpShopkeeper(Player player, String name) {
@@ -238,7 +275,7 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("type", "delete", "movehere", "tp", "rename", "changetype").stream()
+            return List.of("type", "delete", "movehere", "tp", "rename", "changetype", "reload").stream()
                     .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
                     .toList();
         }
