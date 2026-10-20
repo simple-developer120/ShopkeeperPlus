@@ -6,7 +6,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 *   **Platform:** PaperMC (and forks like Purpur / Pufferfish)
 *   **Minecraft Version:** 1.20.5+ up to 26.3+
-*   **Java Version:** Java 21 or higher (Java 25 recommended for Paper 26.3+)
+*   **Java Version:** Java 21 or higher (Java 25 recommended for Paper 26.1+)
 
 ---
 
