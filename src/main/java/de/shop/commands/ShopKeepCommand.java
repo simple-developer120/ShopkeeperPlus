@@ -24,7 +24,22 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
+            if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+                plugin.reloadPlugin();
+                sender.sendMessage("§aPlugin reloaded!");
+                return true;
+            }
             sender.sendMessage("§cOnly players can use this!");
+            return true;
+        }
+        
+        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!player.hasPermission("shopkeeperplus.admin")) {
+                player.sendMessage("§cYou don't have permission!");
+                return true;
+            }
+            plugin.reloadPlugin();
+            player.sendMessage("§aShopKeeperPlus reloaded successfully!");
             return true;
         }
 
@@ -33,21 +48,12 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            if (!player.hasPermission("shopkeeperplus.admin")) {
-                player.sendMessage("§cYou don't have permission to use this command!");
-                return true;
-            }
-            reloadShopkeepers(player);
-            return true;
-        }
-
         if (args.length == 2 && args[0].equalsIgnoreCase("type")) {
             EntityType type;
             try { type = EntityType.valueOf(args[1].toUpperCase()); } 
             catch (IllegalArgumentException e) { player.sendMessage("§cInvalid entity: " + args[1]); return true; }
             
-            if (!isMerchantEntity(type)) {
+            if (!isValidShopEntity(type)) {
                 player.sendMessage("§c" + type.name() + " does not support custom trades!");
                 return true;
             }
@@ -92,35 +98,8 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/shopkeep tp <name> §7- Teleport to a shopkeeper");
         player.sendMessage("§e/shopkeep rename <name> <newName> §7- Rename a shopkeeper");
         player.sendMessage("§e/shopkeep changetype <name> <type> §7- Change entity type of a shopkeeper");
-        player.sendMessage("§e/shopkeep reload §7- Reload and respawn all shopkeepers");
+        player.sendMessage("§e/shopkeep reload §7- Reload the plugin");
         return true;
-    }
-
-    private void reloadShopkeepers(Player player) {
-        player.sendMessage("§eReloading all shopkeepers...");
-
-        // 1. Remove all existing shopkeeper entities
-        int removed = 0;
-        for (World world : Bukkit.getWorlds()) {
-            for (Entity e : world.getEntities()) {
-                if (ShopEditorListener.isShopkeeper(e)) {
-                    e.remove();
-                    removed++;
-                }
-            }
-        }
-
-        // 2. Reload data from disk
-        plugin.getShopDataManager().loadAll();
-
-        // 3. Respawn all shopkeepers
-        int spawned = 0;
-        for (ShopData data : plugin.getShopDataManager().getAll()) {
-            plugin.getShopDataManager().spawnEntity(data);
-            spawned++;
-        }
-
-        player.sendMessage("§aReload complete! Removed §c" + removed + " §aand respawned §a" + spawned + " §ashopkeepers.");
     }
 
     private void tpShopkeeper(Player player, String name) {
@@ -142,7 +121,7 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         try { type = EntityType.valueOf(typeStr.toUpperCase()); } 
         catch (Exception e) { player.sendMessage("§cInvalid entity type!"); return; }
 
-        if (!isMerchantEntity(type)) { player.sendMessage("§cThis entity cannot be a shopkeeper!"); return; }
+        if (!isValidShopEntity(type)) { player.sendMessage("§cThis entity cannot be a shopkeeper!"); return; }
 
         if (data.getEntityUuid() != null) {
             Entity old = Bukkit.getEntity(data.getEntityUuid());
@@ -232,10 +211,10 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         if (entity instanceof Villager villager) {
             villager.setProfession(Villager.Profession.WEAPONSMITH);
             villager.setVillagerLevel(1);
-            villager.setAdult();
         }
-        else if (entity instanceof ZombieVillager zv) {
-            zv.setAdult();
+
+        if (entity instanceof org.bukkit.entity.Ageable ageable) {
+            ageable.setAdult();
         }
 
         List<MerchantRecipe> recipes = new ArrayList<>();
@@ -248,7 +227,9 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         r2.addIngredient(new ItemStack(Material.BOOK, 1));
         recipes.add(r2);
 
-        if (entity instanceof Merchant merchant) merchant.setRecipes(recipes);
+        if (entity instanceof Merchant merchant) {
+            merchant.setRecipes(recipes);
+        }
 
         String fileName = plugin.getShopDataManager().generateUniqueFileName();
         ShopData data = new ShopData(fileName);
@@ -266,10 +247,8 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7Saved as: shopdata/" + fileName + ".yml");
     }
 
-    private boolean isMerchantEntity(EntityType type) {
-        return type == EntityType.VILLAGER
-                || type == EntityType.WANDERING_TRADER
-                || type == EntityType.ZOMBIE_VILLAGER;
+    private boolean isValidShopEntity(EntityType type) {
+        return type.isAlive() && type.isSpawnable() && type != EntityType.PLAYER;
     }
 
     @Override
@@ -282,7 +261,7 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("type")) {
                 return Arrays.stream(EntityType.values())
-                        .filter(this::isMerchantEntity)
+                        .filter(this::isValidShopEntity)
                         .map(EntityType::name)
                         .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
                         .toList();
@@ -297,7 +276,7 @@ public class ShopKeepCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("changetype")) {
             return Arrays.stream(EntityType.values())
-                    .filter(this::isMerchantEntity)
+                    .filter(this::isValidShopEntity)
                     .map(EntityType::name)
                     .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase()))
                     .toList();
