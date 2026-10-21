@@ -4,14 +4,17 @@ plugins {
 }
 
 group = "de.shop"
-version = "2.0.2"
+version = "2.0.3"
 
 repositories {
-    mavenLocal()   // ← مهم: اول از همه چک کنه
+    mavenLocal()
     mavenCentral()
 
     maven("https://repo.papermc.io/repository/maven-public/") {
-        content { includeGroupByRegex("io\\.papermc.*") }
+        content { 
+            includeGroupByRegex("io\\.papermc.*")
+            includeGroup("net.md-5")
+        }
     }
 
     maven("https://repo.minebench.de/") {
@@ -21,11 +24,10 @@ repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") {
         content { includeGroup("me.clip") }
     }
-    maven("https://repo.minebench.de/") {
-    content {
-        includeGroupByRegex("net\\.md-5.*")
+
+    maven("https://libraries.minecraft.net") {
+        content { includeGroup("com.mojang") }
     }
-  }
 }
 
 dependencies {
