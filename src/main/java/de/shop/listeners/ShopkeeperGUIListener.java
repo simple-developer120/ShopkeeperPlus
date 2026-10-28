@@ -18,7 +18,7 @@ import java.util.UUID;
 public class ShopkeeperGUIListener implements Listener {
 
     private final VillagerShop plugin;
-    private final Set<UUID> skipNextClose = new HashSet<>(); // ✅ جلوگیری از پاک شدن استیت
+    private final Set<UUID> skipNextClose = new HashSet<>();
 
     public ShopkeeperGUIListener(VillagerShop plugin) {
         this.plugin = plugin;
@@ -27,7 +27,8 @@ public class ShopkeeperGUIListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (!event.getView().getTitle().startsWith("§8Shop ")) return;
+        
+        if (ShopkeeperGUI.getViewingShopkeeper(player) == null) return;
 
         Inventory top = event.getView().getTopInventory();
         Inventory clicked = event.getClickedInventory();
@@ -38,20 +39,14 @@ public class ShopkeeperGUIListener implements Listener {
             return;
         }
         
-        // اسلات‌های Cost → قفل بشن که پلیر نتونه آیتم‌ها رو برداره یا جابجا کنه
-if (slot == ShopkeeperGUI.SLOT_COST1 || slot == ShopkeeperGUI.SLOT_COST2) {
-    event.setCancelled(true); // ✅ این خط اضافه شد
-    return;
-}
-
         if (slot == ShopkeeperGUI.SLOT_COST1 || slot == ShopkeeperGUI.SLOT_COST2) {
+            event.setCancelled(true); 
             return;
         }
 
         event.setCancelled(true);
 
         UUID skUuid = ShopkeeperGUI.getViewingShopkeeper(player);
-        if (skUuid == null) { player.closeInventory(); return; }
         ShopData data = plugin.getShopDataManager().getByEntity(skUuid);
         if (data == null) { player.closeInventory(); return; }
 
@@ -61,7 +56,6 @@ if (slot == ShopkeeperGUI.SLOT_COST1 || slot == ShopkeeperGUI.SLOT_COST2) {
             return;
         }
 
-        // ✅ Prev با skipNextClose
         if (slot == ShopkeeperGUI.SLOT_PREV) {
             ShopkeeperGUI.returnCostToPlayer(player, top);
             int page = ShopkeeperGUI.getViewingPage(player);
@@ -72,7 +66,6 @@ if (slot == ShopkeeperGUI.SLOT_COST1 || slot == ShopkeeperGUI.SLOT_COST2) {
             return;
         }
 
-        // ✅ Next با skipNextClose
         if (slot == ShopkeeperGUI.SLOT_NEXT) {
             ShopkeeperGUI.returnCostToPlayer(player, top);
             int page = ShopkeeperGUI.getViewingPage(player);
@@ -98,9 +91,9 @@ if (slot == ShopkeeperGUI.SLOT_COST1 || slot == ShopkeeperGUI.SLOT_COST2) {
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
-        if (!event.getView().getTitle().startsWith("§8Shop ")) return;
+        
+        if (ShopkeeperGUI.getViewingShopkeeper(player) == null) return;
 
-        // ✅ اگه در حال تغییر صفحه هستیم، استیت رو پاک نکن
         if (skipNextClose.remove(player.getUniqueId())) {
             return;
         }

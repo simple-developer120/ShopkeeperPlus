@@ -4,6 +4,7 @@ import de.shop.VillagerShop;
 import de.shop.data.ShopData;
 import de.shop.gui.EquipmentGUI;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -145,23 +146,21 @@ public class EditorGUIListener implements Listener {
                 }
             }
             else if (slot == SLOT_BADGE) {
-                ShopData sData = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
-                if (sData != null) {
-                    int nextLevel = sData.getVillagerLevel() + 1;
-                    if (nextLevel > 5) nextLevel = 1;
-                    
-                    sData.setVillagerLevel(nextLevel);
-                    
-                    if (entity instanceof Villager v) {
+                if (entity instanceof Villager v) {
+                    ShopData sData = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
+                    if (sData != null) {
+                        int nextLevel = sData.getVillagerLevel() + 1;
+                        if (nextLevel > 5) nextLevel = 1;
+                        
+                        sData.setVillagerLevel(nextLevel);
                         v.setVillagerLevel(nextLevel);
                         if (v.getVillagerExperience() == 0) v.setVillagerExperience(1);
+                        
+                        plugin.getShopDataManager().save(sData);
+                        saveAllTradesFromPage(topInv, entity, plugin.getPaginationManager().getPage(player), player);
+                        markSkipNextClose(player);
+                        plugin.getShopEditorListener().openEditorGUI(player, entity);
                     }
-                    
-                    plugin.getShopDataManager().save(sData);
-                    
-                    saveAllTradesFromPage(topInv, entity, plugin.getPaginationManager().getPage(player), player);
-                    markSkipNextClose(player);
-                    plugin.getShopEditorListener().openEditorGUI(player, entity);
                 }
             }
             else if (slot == SLOT_PROFESSION) {
@@ -226,30 +225,14 @@ public class EditorGUIListener implements Listener {
                 }
             }
             else if (slot == SLOT_BABY) {
-                if (entity instanceof Villager v) {
+                if (entity instanceof Ageable ageable) {
                     ShopData sData = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
-                    if (v.isAdult()) { 
-                        v.setBaby(); 
+                    if (ageable.isAdult()) { 
+                        ageable.setBaby(); 
                         if(sData != null) sData.setBaby(true); 
                         player.sendMessage("§dBaby mode!"); 
                     } else { 
-                        v.setAdult(); 
-                        if(sData != null) sData.setBaby(false); 
-                        player.sendMessage("§dAdult mode!"); 
-                    }
-                    if (sData != null) plugin.getShopDataManager().save(sData);
-                    saveAllTradesFromPage(topInv, entity, plugin.getPaginationManager().getPage(player), player);
-                    markSkipNextClose(player);
-                    plugin.getShopEditorListener().openEditorGUI(player, entity);
-                }
-                else if (entity instanceof ZombieVillager zv) {
-                    ShopData sData = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
-                    if (!zv.isBaby()) { 
-                        zv.setBaby(); 
-                        if(sData != null) sData.setBaby(true); 
-                        player.sendMessage("§dBaby mode!"); 
-                    } else { 
-                        zv.setAdult(); 
+                        ageable.setAdult(); 
                         if(sData != null) sData.setBaby(false); 
                         player.sendMessage("§dAdult mode!"); 
                     }
@@ -310,71 +293,70 @@ public class EditorGUIListener implements Listener {
         clearEditingEntity(player);
     }
 
-private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageIndex, Player player) {
-    ShopData data = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
-    if (data == null) return;
+    private void saveAllTradesFromPage(Inventory topInv, Entity entity, int pageIndex, Player player) {
+        ShopData data = plugin.getShopDataManager().getByEntity(entity.getUniqueId());
+        if (data == null) return;
 
-    List<MerchantRecipe> recipes = new ArrayList<>(data.getRecipes());
-    int pageStart = pageIndex * TRADES_PER_PAGE;
-    int added = 0, updated = 0, removed = 0;
+        List<MerchantRecipe> recipes = new ArrayList<>(data.getRecipes());
+        int pageStart = pageIndex * TRADES_PER_PAGE;
+        int added = 0, updated = 0, removed = 0;
 
-    for (int col = 0; col < TRADES_PER_PAGE; col++) {
-        int globalIndex = pageStart + col;
+        for (int col = 0; col < TRADES_PER_PAGE; col++) {
+            int globalIndex = pageStart + col;
 
-        ItemStack result = topInv.getItem(getResultSlot(col));
-        ItemStack cost1  = topInv.getItem(getCost1Slot(col));
-        ItemStack cost2  = topInv.getItem(getCost2Slot(col));
+            ItemStack result = topInv.getItem(getResultSlot(col));
+            ItemStack cost1  = topInv.getItem(getCost1Slot(col));
+            ItemStack cost2  = topInv.getItem(getCost2Slot(col));
 
-        boolean hasResult = result != null && !result.getType().isAir();
-        boolean hasCost1  = cost1  != null && !cost1.getType().isAir();
-        boolean hasCost2  = cost2  != null && !cost2.getType().isAir();
+            boolean hasResult = result != null && !result.getType().isAir();
+            boolean hasCost1  = cost1  != null && !cost1.getType().isAir();
+            boolean hasCost2  = cost2  != null && !cost2.getType().isAir();
 
-        if (!hasResult) {
-            if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
-                recipes.set(globalIndex, null);
-                removed++;
+            if (!hasResult) {
+                if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
+                    recipes.set(globalIndex, null);
+                    removed++;
+                }
+                continue;
             }
-            continue;
-        }
 
-        if (!hasCost1 && !hasCost2) {
-            if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
-                recipes.set(globalIndex, null);
-                removed++;
+            if (!hasCost1 && !hasCost2) {
+                if (globalIndex < recipes.size() && recipes.get(globalIndex) != null) {
+                    recipes.set(globalIndex, null);
+                    removed++;
+                }
+                continue;
             }
-            continue;
+
+            MerchantRecipe recipe = new MerchantRecipe(result.clone(), Integer.MAX_VALUE);
+            
+            if (hasCost1 && hasCost2) {
+                recipe.addIngredient(cost1.clone());
+                recipe.addIngredient(cost2.clone());
+            } 
+            else if (hasCost1) {
+                recipe.addIngredient(cost1.clone());
+            } 
+            else {
+                recipe.addIngredient(cost2.clone());
+            }
+
+            while (recipes.size() <= globalIndex) recipes.add(null);
+            boolean wasEmpty = recipes.get(globalIndex) == null;
+            recipes.set(globalIndex, recipe);
+            
+            if (wasEmpty) added++; 
+            else updated++;
         }
+        recipes.removeIf(Objects::isNull);
 
-        MerchantRecipe recipe = new MerchantRecipe(result.clone(), Integer.MAX_VALUE);
-        
-        if (hasCost1 && hasCost2) {
-            recipe.addIngredient(cost1.clone());
-            recipe.addIngredient(cost2.clone());
-        } 
-        else if (hasCost1) {
-            recipe.addIngredient(cost1.clone());
-        } 
-        else {
-            recipe.addIngredient(cost2.clone());
+        data.setRecipes(recipes);
+        plugin.getShopDataManager().save(data);
+
+        if (player != null && (added + updated + removed > 0)) {
+            player.sendMessage("§aPage " + (pageIndex + 1) + " saved §7(§a+"
+                    + added + " §7new, §e~" + updated + " §7updated, §c-"
+                    + removed + " §7removed)");
         }
-
-        while (recipes.size() <= globalIndex) recipes.add(null);
-        boolean wasEmpty = recipes.get(globalIndex) == null;
-        recipes.set(globalIndex, recipe);
-        
-        if (wasEmpty) added++; 
-        else updated++;
     }
-
-    recipes.removeIf(Objects::isNull);
-
-    data.setRecipes(recipes);
-    plugin.getShopDataManager().save(data);
-
-    if (player != null && (added + updated + removed > 0)) {
-        player.sendMessage("§aPage " + (pageIndex + 1) + " saved §7(§a+"
-                + added + " §7new, §e~" + updated + " §7updated, §c-"
-                + removed + " §7removed)");
-    }
-}
 }

@@ -8,7 +8,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.ZombieVillager;
@@ -52,7 +54,8 @@ public class ShopEditorListener implements Listener {
         Player player = event.getPlayer();
         Entity clicked = event.getRightClicked();
 
-        if (!(clicked instanceof Merchant) && !(clicked instanceof ZombieVillager)) return;
+        // ✅ این `if` مهم‌ترین تغییره! حالا هر موجود زنده‌ای (LivingEntity) رو قبول میکنه
+        if (!(clicked instanceof LivingEntity)) return;
         if (!isShopkeeper(clicked)) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
 
@@ -120,17 +123,24 @@ public class ShopEditorListener implements Listener {
         String currentName = (data != null && data.getCustomName() != null) ? data.getCustomName() : ShopDataManager.DEFAULT_NAME;
         gui.setItem(EditorGUIListener.SLOT_NAME_TAG, item(Material.NAME_TAG, "§bChange Shop Name", "§7Current: " + currentName, "§eClick to rename"));
 
-        int badgeLevel = (data != null) ? data.getVillagerLevel() : 1;
-        gui.setItem(EditorGUIListener.SLOT_BADGE, getBadgeColorItem(badgeLevel));
-
-        if (entity instanceof Villager v) {
+        // ✅ نمایش دکمه رنگ بج فقط برای Villager
+        if (entity instanceof Villager) {
+            int badgeLevel = (data != null) ? data.getVillagerLevel() : 1;
+            gui.setItem(EditorGUIListener.SLOT_BADGE, getBadgeColorItem(badgeLevel));
+            
+            Villager v = (Villager) entity;
             gui.setItem(EditorGUIListener.SLOT_PROFESSION, getProfessionItem(v.getProfession()));
             gui.setItem(EditorGUIListener.SLOT_TYPE, getTypeItem(v.getVillagerType()));
-            gui.setItem(EditorGUIListener.SLOT_BABY, item(Material.EGG, "§dToggle Baby/Adult", "§7Current: " + (v.isAdult() ? "Adult" : "Baby")));
         } 
-        else if (entity instanceof ZombieVillager zv) {
+        else if (entity instanceof ZombieVillager) {
+            ZombieVillager zv = (ZombieVillager) entity;
             gui.setItem(EditorGUIListener.SLOT_PROFESSION, getProfessionItem(zv.getVillagerProfession()));
-            gui.setItem(EditorGUIListener.SLOT_BABY, item(Material.EGG, "§dToggle Baby/Adult", "§7Current: " + (zv.isBaby() ? "Baby" : "Adult")));
+        }
+
+        // ✅ نمایش دکمه بچه فقط برای موجوداتی که Ageable هستند (مثل Creeper, Cow, Pig و...)
+        if (entity instanceof Ageable) {
+            Ageable ageable = (Ageable) entity;
+            gui.setItem(EditorGUIListener.SLOT_BABY, item(Material.EGG, "§dToggle Baby/Adult", "§7Current: " + (ageable.isAdult() ? "Adult" : "Baby")));
         }
 
         if (currentPage < EditorGUIListener.MAX_PAGES - 1) gui.setItem(EditorGUIListener.SLOT_NEXT_PAGE, item(Material.ARROW, "§6Next Page"));
