@@ -54,7 +54,6 @@ public class ShopEditorListener implements Listener {
         Player player = event.getPlayer();
         Entity clicked = event.getRightClicked();
 
-        // ✅ این `if` مهم‌ترین تغییره! حالا هر موجود زنده‌ای (LivingEntity) رو قبول میکنه
         if (!(clicked instanceof LivingEntity)) return;
         if (!isShopkeeper(clicked)) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -123,7 +122,6 @@ public class ShopEditorListener implements Listener {
         String currentName = (data != null && data.getCustomName() != null) ? data.getCustomName() : ShopDataManager.DEFAULT_NAME;
         gui.setItem(EditorGUIListener.SLOT_NAME_TAG, item(Material.NAME_TAG, "§bChange Shop Name", "§7Current: " + currentName, "§eClick to rename"));
 
-        // ✅ نمایش دکمه رنگ بج فقط برای Villager
         if (entity instanceof Villager) {
             int badgeLevel = (data != null) ? data.getVillagerLevel() : 1;
             gui.setItem(EditorGUIListener.SLOT_BADGE, getBadgeColorItem(badgeLevel));
@@ -137,7 +135,6 @@ public class ShopEditorListener implements Listener {
             gui.setItem(EditorGUIListener.SLOT_PROFESSION, getProfessionItem(zv.getVillagerProfession()));
         }
 
-        // ✅ نمایش دکمه بچه فقط برای موجوداتی که Ageable هستند (مثل Creeper, Cow, Pig و...)
         if (entity instanceof Ageable) {
             Ageable ageable = (Ageable) entity;
             gui.setItem(EditorGUIListener.SLOT_BABY, item(Material.EGG, "§dToggle Baby/Adult", "§7Current: " + (ageable.isAdult() ? "Adult" : "Baby")));
