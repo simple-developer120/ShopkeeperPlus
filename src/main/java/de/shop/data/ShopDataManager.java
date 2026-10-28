@@ -248,7 +248,7 @@ public void save(ShopData data) {
         }
     }
 
- public void spawnEntity(ShopData data) {
+public void spawnEntity(ShopData data) {
     Location loc = data.getLocation();
     if (loc == null || loc.getWorld() == null) return;
 
@@ -291,20 +291,15 @@ public void save(ShopData data) {
             } catch (Exception ignored) {
                 villager.setProfession(Villager.Profession.WEAPONSMITH);
             }
-
             try {
                 villager.setVillagerType(Villager.Type.valueOf(data.getVillagerType()));
             } catch (Exception ignored) {
                 villager.setVillagerType(Villager.Type.PLAINS);
             }
-
             villager.setVillagerLevel(data.getVillagerLevel());
             if (villager.getVillagerExperience() == 0) {
                 villager.setVillagerExperience(1); 
             }
-
-            if (data.isBaby()) villager.setBaby();
-            else villager.setAdult();
         }
         else if (entity instanceof ZombieVillager zv) {
             try {
@@ -312,11 +307,13 @@ public void save(ShopData data) {
             } catch (Exception ignored) {
                 zv.setVillagerProfession(Villager.Profession.WEAPONSMITH);
             }
-
-            if (data.isBaby()) zv.setBaby();
-            else zv.setAdult();
         }
-
+        
+        if (entity instanceof org.bukkit.entity.Ageable ageable) {
+            if (data.isBaby()) ageable.setBaby();
+            else ageable.setAdult();
+        }
+        
         if (entity instanceof Merchant merchant) {
             merchant.setRecipes(data.getRecipes());
         }
@@ -324,21 +321,14 @@ public void save(ShopData data) {
         if (entity instanceof org.bukkit.entity.WanderingTrader wt) {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (wt.isDead()) return;
-                
                 org.bukkit.inventory.EntityEquipment equipment = wt.getEquipment();
                 if (equipment != null) {
                     equipment.setItemInMainHand(new ItemStack(Material.AIR));
                     equipment.setItemInOffHand(new ItemStack(Material.AIR));
-                    
                     ItemStack mainHand = data.getEquipment().get(org.bukkit.inventory.EquipmentSlot.HAND);
-                    if (mainHand != null && !mainHand.getType().isAir()) {
-                        equipment.setItemInMainHand(mainHand);
-                    }
-                    
+                    if (mainHand != null && !mainHand.getType().isAir()) equipment.setItemInMainHand(mainHand);
                     ItemStack offHand = data.getEquipment().get(org.bukkit.inventory.EquipmentSlot.OFF_HAND);
-                    if (offHand != null && !offHand.getType().isAir()) {
-                        equipment.setItemInOffHand(offHand);
-                    }
+                    if (offHand != null && !offHand.getType().isAir()) equipment.setItemInOffHand(offHand);
                 }
             });
         }
