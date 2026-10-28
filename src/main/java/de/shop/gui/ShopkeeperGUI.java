@@ -16,7 +16,6 @@ public class ShopkeeperGUI {
 
     public static final int SIZE = 27;
 
-    // ---- Row 0 ----
     public static final int SLOT_COST1 = 0;
     public static final int SLOT_COST2 = 1;
     public static final int SLOT_ARROW = 2;
@@ -25,7 +24,6 @@ public class ShopkeeperGUI {
     public static final int SLOT_CLOSE = 7;
     public static final int SLOT_NEXT = 8;
 
-    // ---- Trade list (rows 1-2) ----
     public static final int TRADES_START = 9;
     public static final int TRADES_PER_PAGE = 18;
 
@@ -33,7 +31,6 @@ public class ShopkeeperGUI {
     private static final Map<UUID, Integer> viewingPage = new HashMap<>();
     private static final Map<UUID, Integer> selectedTrade = new HashMap<>();
 
-    // ---------- Open ----------
     public static void open(Player player, ShopData data, int page) {
         if (page < 0) page = 0;
         List<MerchantRecipe> recipes = data.getRecipes();
@@ -44,8 +41,12 @@ public class ShopkeeperGUI {
         viewingPage.put(player.getUniqueId(), page);
         selectedTrade.put(player.getUniqueId(), -1);
 
+        String displayName = data.getCustomName() != null && !data.getCustomName().isEmpty() 
+                ? data.getCustomName() 
+                : "§6Shopkeeper";
+
         Inventory gui = Bukkit.createInventory(null, SIZE,
-                "§8Shop §7(" + (page + 1) + "/" + totalPages + ")");
+                displayName + " §7(Page " + (page + 1) + "/" + totalPages + ")");
 
         ItemStack pane = staticItem(Material.GRAY_STAINED_GLASS_PANE, "§7");
         for (int i = 0; i < SIZE; i++) gui.setItem(i, pane.clone());
@@ -71,7 +72,6 @@ public class ShopkeeperGUI {
         player.openInventory(gui);
     }
 
-  
     public static void refresh(Player player, ShopData data) {
         Inventory top = player.getOpenInventory().getTopInventory();
         if (top == null) return;
@@ -117,7 +117,6 @@ public class ShopkeeperGUI {
         }
     }
 
-    // ---------- State ----------
     public static UUID getViewingShopkeeper(Player player) { return viewingShopkeeper.get(player.getUniqueId()); }
     public static int getViewingPage(Player player) { return viewingPage.getOrDefault(player.getUniqueId(), 0); }
     public static int getSelectedTrade(Player player) { return selectedTrade.getOrDefault(player.getUniqueId(), -1); }
@@ -127,7 +126,6 @@ public class ShopkeeperGUI {
         selectedTrade.remove(player.getUniqueId());
     }
 
-    // ---------- Select Trade (auto-fill) ----------
     public static void selectTrade(Player player, ShopData data, int tradeIndex) {
         Inventory gui = player.getOpenInventory().getTopInventory();
         if (gui == null) return;
@@ -193,7 +191,6 @@ public class ShopkeeperGUI {
         player.updateInventory();
     }
 
-    // ---------- Buy ----------
     public static boolean tryBuy(Player player, ShopData data) {
         Inventory gui = player.getOpenInventory().getTopInventory();
         if (gui == null) return false;
@@ -265,7 +262,6 @@ public class ShopkeeperGUI {
         return true;
     }
 
-    // ---------- Return Cost items ----------
     public static void returnCostToPlayer(Player player, Inventory gui) {
         if (gui == null) return;
 
@@ -294,7 +290,6 @@ public class ShopkeeperGUI {
         player.updateInventory();
     }
 
-    // ---------- Helpers ----------
     private static boolean matchesIngredients(List<ItemStack> ingredients, ItemStack cost1, ItemStack cost2) {
         List<ItemStack> placed = new ArrayList<>();
         if (cost1 != null && !cost1.getType().isAir()) placed.add(cost1);
