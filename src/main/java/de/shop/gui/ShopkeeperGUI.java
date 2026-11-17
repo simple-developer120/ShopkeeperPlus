@@ -1,6 +1,7 @@
 package de.shop.gui;
 
 import de.shop.data.ShopData;
+import de.shop.util.GuiItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -30,12 +31,18 @@ public class ShopkeeperGUI {
     private static final Map<UUID, UUID> viewingShopkeeper = new HashMap<>();
     private static final Map<UUID, Integer> viewingPage = new HashMap<>();
     private static final Map<UUID, Integer> selectedTrade = new HashMap<>();
+    /** The exact GUI inventory each player is currently looking at (identity-checked in listeners). */
+    private static final Map<UUID, Inventory> viewingInventory = new HashMap<>();
 
     public static void open(Player player, ShopData data, int page) {
         if (page < 0) page = 0;
         List<MerchantRecipe> recipes = data.getRecipes();
         int totalPages = Math.max(1, (int) Math.ceil((double) recipes.size() / TRADES_PER_PAGE));
         if (page >= totalPages) page = totalPages - 1;
+
+        // Re-opening (e.g. spammed right-clicks): give back anything held in the previous GUI first.
+        Inventory previous = viewingInventory.get(player.getUniqueId());
+        if (previous != null) returnCostToPlayer(player, previous);
 
         viewingShopkeeper.put(player.getUniqueId(), data.getEntityUuid());
         viewingPage.put(player.getUniqueId(), page);
@@ -45,8 +52,10 @@ public class ShopkeeperGUI {
                 ? data.getCustomName() 
                 : "§6Shopkeeper";
 
-        Inventory gui = Bukkit.createInventory(null, SIZE,
+        ShopGuiHolder holder = new ShopGuiHolder();
+        Inventory gui = Bukkit.createInventory(holder, SIZE,
                 displayName + " §7(Page " + (page + 1) + "/" + totalPages + ")");
+        holder.setInventory(gui);
 
         ItemStack pane = staticItem(Material.GRAY_STAINED_GLASS_PANE, "§7");
         for (int i = 0; i < SIZE; i++) gui.setItem(i, pane.clone());
@@ -69,6 +78,7 @@ public class ShopkeeperGUI {
             gui.setItem(TRADES_START + i, buildTradeDisplay(recipe, player));
         }
 
+        viewingInventory.put(player.getUniqueId(), gui);
         player.openInventory(gui);
     }
 
@@ -94,24 +104,14 @@ public class ShopkeeperGUI {
             if (globalIndex < recipes.size()) {
                 MerchantRecipe recipe = recipes.get(globalIndex);
                 if (recipe != null) {
-                    ItemStack resultDisplay = recipe.getResult().clone();
-                    ItemMeta rMeta = resultDisplay.getItemMeta();
-                    if (rMeta != null) {
-                        List<String> lore = new ArrayList<>();
-                        if (rMeta.hasLore()) lore.addAll(rMeta.getLore());
-                        lore.add("");
-                        boolean allAvailable = true;
-                        for (ItemStack ing : recipe.getIngredients()) {
-                            if (countSimilar(player, ing) < ing.getAmount()) {
-                                allAvailable = false;
-                                break;
-                            }
+                    boolean allAvailable = true;
+                    for (ItemStack ing : recipe.getIngredients()) {
+                        if (countSimilar(player, ing) < ing.getAmount()) {
+                            allAvailable = false;
+                            break;
                         }
-                        lore.add(allAvailable ? "§a✔ Click to buy!" : "§c✘ Not enough items!");
-                        rMeta.setLore(lore);
-                        resultDisplay.setItemMeta(rMeta);
                     }
-                    top.setItem(SLOT_RESULT, resultDisplay);
+                    top.setItem(SLOT_RESULT, resultDisplay(recipe, allAvailable));
                 }
             }
         }
@@ -124,11 +124,41 @@ public class ShopkeeperGUI {
         viewingShopkeeper.remove(player.getUniqueId());
         viewingPage.remove(player.getUniqueId());
         selectedTrade.remove(player.getUniqueId());
+        viewingInventory.remove(player.getUniqueId());
+    }
+
+    /** True for ANY shop GUI inventory, regardless of tracked player state. */
+    public static boolean isShopGui(Inventory inv) {
+        return inv != null && inv.getHolder() instanceof ShopGuiHolder;
+    }
+
+    /** True only if {@code inv} is the very shop GUI instance this player has open. */
+    public static boolean isShopInventory(Player player, Inventory inv) {
+        if (inv == null) return false;
+        return viewingInventory.get(player.getUniqueId()) == inv;
+    }
+
+    /** Called when a player leaves: gives escrowed cost items back and drops all state. */
+    public static void releaseOnQuit(Player player) {
+        Inventory gui = viewingInventory.get(player.getUniqueId());
+        if (gui != null) returnCostToPlayer(player, gui);
+        clearViewing(player);
+    }
+
+    /** Closes every open shop GUI (items are returned by the close handler). Used on disable/reload. */
+    public static void closeAll() {
+        for (Player p : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            Inventory gui = viewingInventory.get(p.getUniqueId());
+            if (gui == null) continue;
+            returnCostToPlayer(p, gui);
+            clearViewing(p);
+            p.closeInventory();
+        }
     }
 
     public static void selectTrade(Player player, ShopData data, int tradeIndex) {
         Inventory gui = player.getOpenInventory().getTopInventory();
-        if (gui == null) return;
+        if (!isShopGui(gui)) return;
 
         returnCostToPlayer(player, gui);
 
@@ -172,28 +202,18 @@ public class ShopkeeperGUI {
                     meta.setLore(lore);
                     display.setItemMeta(meta);
                 }
-                gui.setItem(slots[i], display);
+                gui.setItem(slots[i], GuiItemUtil.mark(display));
             }
         }
 
-        ItemStack resultDisplay = recipe.getResult().clone();
-        ItemMeta rMeta = resultDisplay.getItemMeta();
-        if (rMeta != null) {
-            List<String> lore = new ArrayList<>();
-            if (rMeta.hasLore()) lore.addAll(rMeta.getLore());
-            lore.add("");
-            lore.add(allAvailable ? "§a✔ Click to buy!" : "§c✘ Not enough items!");
-            rMeta.setLore(lore);
-            resultDisplay.setItemMeta(rMeta);
-        }
-        gui.setItem(SLOT_RESULT, resultDisplay);
+        gui.setItem(SLOT_RESULT, resultDisplay(recipe, allAvailable));
 
         player.updateInventory();
     }
 
     public static boolean tryBuy(Player player, ShopData data) {
         Inventory gui = player.getOpenInventory().getTopInventory();
-        if (gui == null) return false;
+        if (!isShopGui(gui)) return false;
 
         int sel = getSelectedTrade(player);
         if (sel < 0) return false;
@@ -241,17 +261,7 @@ public class ShopkeeperGUI {
                 gui.setItem(slots[i], ing.clone());
             }
 
-            ItemStack resultDisplay = recipe.getResult().clone();
-            ItemMeta rMeta = resultDisplay.getItemMeta();
-            if (rMeta != null) {
-                List<String> lore = new ArrayList<>();
-                if (rMeta.hasLore()) lore.addAll(rMeta.getLore());
-                lore.add("");
-                lore.add("§a✔ Click to buy!");
-                rMeta.setLore(lore);
-                resultDisplay.setItemMeta(rMeta);
-            }
-            gui.setItem(SLOT_RESULT, resultDisplay);
+            gui.setItem(SLOT_RESULT, resultDisplay(recipe, true));
         } else {
             selectedTrade.put(player.getUniqueId(), -1);
             gui.setItem(SLOT_RESULT, staticItem(Material.BARRIER, "§7No more items to trade", "§cNot enough in inventory"));
@@ -268,17 +278,10 @@ public class ShopkeeperGUI {
         for (int slot : new int[]{SLOT_COST1, SLOT_COST2}) {
             ItemStack item = gui.getItem(slot);
             if (item != null && !item.getType().isAir()) {
-                if (item.getType() == Material.GRAY_STAINED_GLASS_PANE) {
+                // Display-only placeholders (tagged) are simply discarded, real items are returned.
+                if (GuiItemUtil.isGuiItem(item)) {
                     gui.setItem(slot, null);
                     continue;
-                }
-                if (item.hasItemMeta() && item.getItemMeta().hasLore()) {
-                    List<String> lore = item.getItemMeta().getLore();
-                    boolean isPreview = lore != null && lore.stream().anyMatch(l -> l.contains("Not enough in inventory"));
-                    if (isPreview) {
-                        gui.setItem(slot, null);
-                        continue;
-                    }
                 }
                 Map<Integer, ItemStack> leftover = player.getInventory().addItem(item.clone());
                 for (ItemStack drop : leftover.values()) {
@@ -340,7 +343,21 @@ public class ShopkeeperGUI {
         lore.add(canBuy ? "§aClick to select!" : "§cNot enough items!");
         meta.setLore(lore);
         display.setItemMeta(meta);
-        return display;
+        return GuiItemUtil.mark(display);
+    }
+
+    private static ItemStack resultDisplay(MerchantRecipe recipe, boolean canBuy) {
+        ItemStack display = recipe.getResult().clone();
+        ItemMeta meta = display.getItemMeta();
+        if (meta != null) {
+            List<String> lore = new ArrayList<>();
+            if (meta.hasLore()) lore.addAll(meta.getLore());
+            lore.add("");
+            lore.add(canBuy ? "§a✔ Click to buy!" : "§c✘ Not enough items!");
+            meta.setLore(lore);
+            display.setItemMeta(meta);
+        }
+        return GuiItemUtil.mark(display);
     }
 
     private static ItemStack staticItem(Material mat, String name, String... lore) {
@@ -351,7 +368,7 @@ public class ShopkeeperGUI {
             if (lore.length > 0) meta.setLore(Arrays.asList(lore));
             stack.setItemMeta(meta);
         }
-        return stack;
+        return GuiItemUtil.mark(stack);
     }
 
     private static String pretty(ItemStack item) {

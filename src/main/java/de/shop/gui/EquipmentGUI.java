@@ -1,5 +1,6 @@
 package de.shop.gui;
 
+import de.shop.util.GuiItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -51,6 +52,6 @@ public class EquipmentGUI {
             meta.setDisplayName(name);
             stack.setItemMeta(meta);
         }
-        return stack;
+        return GuiItemUtil.mark(stack);
     }
   }
