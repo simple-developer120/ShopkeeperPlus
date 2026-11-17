@@ -4,6 +4,7 @@ import de.shop.VillagerShop;
 import de.shop.data.ShopData;
 import de.shop.data.ShopDataManager;
 import de.shop.gui.ShopkeeperGUI;
+import de.shop.util.GuiItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -54,6 +55,7 @@ public class ShopEditorListener implements Listener {
         Player player = event.getPlayer();
         Entity clicked = event.getRightClicked();
 
+        // ✅ این `if` مهم‌ترین تغییره! حالا هر موجود زنده‌ای (LivingEntity) رو قبول میکنه
         if (!(clicked instanceof LivingEntity)) return;
         if (!isShopkeeper(clicked)) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -76,6 +78,9 @@ public class ShopEditorListener implements Listener {
             player.sendMessage("§cThis shop is currently closed!");
             return;
         }
+
+        // Spammed right-clicks (e.g. "fast use" cheats) must not re-open the GUI over and over.
+        if (ShopkeeperGUI.isShopGui(player.getOpenInventory().getTopInventory())) return;
 
         ShopkeeperGUI.open(player, data, 0);
     }
@@ -122,6 +127,7 @@ public class ShopEditorListener implements Listener {
         String currentName = (data != null && data.getCustomName() != null) ? data.getCustomName() : ShopDataManager.DEFAULT_NAME;
         gui.setItem(EditorGUIListener.SLOT_NAME_TAG, item(Material.NAME_TAG, "§bChange Shop Name", "§7Current: " + currentName, "§eClick to rename"));
 
+        // ✅ نمایش دکمه رنگ بج فقط برای Villager
         if (entity instanceof Villager) {
             int badgeLevel = (data != null) ? data.getVillagerLevel() : 1;
             gui.setItem(EditorGUIListener.SLOT_BADGE, getBadgeColorItem(badgeLevel));
@@ -135,6 +141,7 @@ public class ShopEditorListener implements Listener {
             gui.setItem(EditorGUIListener.SLOT_PROFESSION, getProfessionItem(zv.getVillagerProfession()));
         }
 
+        // ✅ نمایش دکمه بچه فقط برای موجوداتی که Ageable هستند (مثل Creeper, Cow, Pig و...)
         if (entity instanceof Ageable) {
             Ageable ageable = (Ageable) entity;
             gui.setItem(EditorGUIListener.SLOT_BABY, item(Material.EGG, "§dToggle Baby/Adult", "§7Current: " + (ageable.isAdult() ? "Adult" : "Baby")));
@@ -164,7 +171,7 @@ public class ShopEditorListener implements Listener {
             meta.setLore(Collections.singletonList("§7Current: " + name + " §7(Level " + level + ")"));
             item.setItemMeta(meta);
         }
-        return item;
+        return GuiItemUtil.mark(item);
     }
 
     private ItemStack getProfessionItem(Villager.Profession prof) {
@@ -199,7 +206,7 @@ public class ShopEditorListener implements Listener {
             meta.setLore(Collections.singletonList("§7Current: " + prof.name()));
             item.setItemMeta(meta);
         }
-        return item;
+        return GuiItemUtil.mark(item);
     }
 
     private ItemStack getTypeItem(Villager.Type type) {
@@ -223,7 +230,7 @@ public class ShopEditorListener implements Listener {
             meta.setLore(Collections.singletonList("§7Current: " + type.name()));
             item.setItemMeta(meta);
         }
-        return item;
+        return GuiItemUtil.mark(item);
     }
 
     private ItemStack item(Material material, String name, String... lore) {
@@ -233,6 +240,6 @@ public class ShopEditorListener implements Listener {
         meta.setDisplayName(name);
         if (lore.length > 0) meta.setLore(Arrays.asList(lore));
         stack.setItemMeta(meta);
-        return stack;
+        return GuiItemUtil.mark(stack);
     }
 }
