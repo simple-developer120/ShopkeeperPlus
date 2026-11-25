@@ -2,7 +2,7 @@
 
 A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows you to create custom entities (Villagers, Wandering Traders, Zombie Villagers) with completely custom trades, equipment, and behaviors, without relying on the vanilla Minecraft merchant limitations.
 
-## 📌 Compatibility
+## Compatibility
 
 *   **Platform:** PaperMC (and forks like Purpur / Pufferfish)
 *   **Minecraft Version:** 1.20.5+ up to 26.3+
@@ -10,7 +10,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 ---
 
-## 🚀 Features
+## Features
 
 ### 1. Custom Entity Shopkeepers
 *   Spawn **Villagers**, **Wandering Traders**, or **Zombie Villagers** as shopkeepers.
@@ -45,7 +45,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 ---
 
-## 🎮 Commands
+## Commands
 
 | Command | Description |
 | :--- | :--- |
@@ -60,7 +60,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 ---
 
-## 🔐 Permissions
+## Permissions
 
 | Permission | Default | Description |
 | :--- | :--- | :--- |
@@ -69,7 +69,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 ---
 
-## 🛠️ How to Use
+## How to Use
 
 ### For Admins (Creating a Shop)
 1. Stand where you want the shopkeeper.
@@ -88,7 +88,7 @@ A highly customizable, fully-featured Shopkeeper plugin for PaperMC. It allows y
 
 ---
 
-## 📂 Configuration
+## Configuration
 The plugin does not require manual configuration. All data is dynamically generated and managed:
 *   `plugins/ShopKeeperPlus/shopdata/` - Contains the `.yml` files for each shopkeeper.
 *   Trades, equipment, and items are serialized safely using Base64 to preserve all NBT/DataComponent data.
